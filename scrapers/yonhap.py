@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from scrapers import BaseScraper, register_scraper
 
 
@@ -13,14 +15,10 @@ class YonhapScraper(BaseScraper):
         all_news = []
         seen = set()
         try:
-            resp = requests.get(self.english_url, headers=self.headers, timeout=15)
+            resp = requests.get(self.english_url, headers=self.headers, timeout=15, verify=False)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for article in soup.select('.article-item, .news-item, .headline-item'):
-                link = article.find('a')
-                if not link:
-                    continue
-
+            for link in soup.select('a[href*="/view/"]'):
                 title = link.get_text(strip=True)
                 href = link.get('href', '')
 
@@ -36,26 +34,18 @@ class YonhapScraper(BaseScraper):
                     continue
                 seen.add(href)
 
-                img = ''
-                if include_images:
-                    img_elem = article.select_one('img')
-                    if img_elem:
-                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
-
-                category = ''
-                cat_elem = article.select_one('.category, .section')
-                if cat_elem:
-                    category = cat_elem.get_text(strip=True)
-
                 all_news.append({
                     'title': title,
                     'link': href,
-                    'image': img,
+                    'image': '',
                     'description': '',
-                    'category': category.upper() if category else 'NEWS'
+                    'category': 'KOREA'
                 })
+
+                if len(all_news) >= 30:
+                    break
         except Exception as e:
-            print(f"Error in get_home_news: {e}")
+            print(f"Error in Yonhap get_home_news: {e}")
 
         if not all_news:
             return self._get_korean_news(include_images)

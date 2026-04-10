@@ -39,8 +39,19 @@ class SCMPScraper(BaseScraper):
                     continue
 
                 full_url = self.base_url + href if href.startswith('/') else href
-
                 parent = a.find_parent(['div', 'li', 'article'])
+
+                img = ''
+                if include_images and parent:
+                    img_elem = parent.select_one('img')
+                    if img_elem:
+                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
+                    if not img and parent.parent:
+                        parent2 = parent.parent.find_parent('div') if parent.parent else None
+                        if parent2:
+                            img_elem = parent2.select_one('img')
+                            if img_elem:
+                                img = img_elem.get('src', '') or img_elem.get('data-src', '')
 
                 desc = ''
                 if parent:
@@ -69,7 +80,7 @@ class SCMPScraper(BaseScraper):
                 all_news.append({
                     'title': title,
                     'link': full_url,
-                    'image': '',
+                    'image': img,
                     'description': desc[:200] if desc else '',
                     'category': ', '.join(tags) if tags else 'News'
                 })
@@ -224,13 +235,13 @@ class SCMPScraper(BaseScraper):
 
     def get_article(self, url):
         from urllib.parse import urlparse
-        
+
         parsed = urlparse(url)
         path = parsed.path
         if not path.endswith('/'):
             path = path + '/'
         clean_url = f'{parsed.scheme}://{parsed.netloc}{path}'
-        
+
         try:
             resp = requests.get(clean_url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.text, 'html.parser')
@@ -293,10 +304,10 @@ class SCMPScraper(BaseScraper):
             if not path.endswith('/'):
                 path = path + '/'
             clean_url = f'{parsed.scheme}://{parsed.netloc}{path}'
-            
+
             resp = requests.get(clean_url, headers=self.headers, timeout=10)
             soup = BeautifulSoup(resp.text, 'html.parser')
-            
+
             picture = soup.find('picture')
             if picture:
                 source = picture.find('source')
@@ -304,7 +315,7 @@ class SCMPScraper(BaseScraper):
                     srcset = source.get('srcset', '')
                     if srcset:
                         return srcset.split(',')[0].strip().split(' ')[0]
-            
+
             for img_elem in soup.find_all('img'):
                 src = img_elem.get('src') or ''
                 if src and 'cdn.i-scmp.com' in src and 'canvas' not in src:

@@ -16,20 +16,20 @@ class MainichiScraper(BaseScraper):
             resp = requests.get(self.english_url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for article in soup.select('.article-item, .news-item, .top-article'):
-                link = article.find('a')
-                if not link:
-                    continue
-
+            for link in soup.select('a[href*="/english/articles/"]'):
                 title = link.get_text(strip=True)
                 href = link.get('href', '')
 
                 if not title or len(title) < 10:
                     continue
+                if 'Full article' in title:
+                    continue
                 if not href:
                     continue
 
-                if not href.startswith('http'):
+                if href.startswith('//'):
+                    href = 'https:' + href
+                elif not href.startswith('http'):
                     href = self.base_url + href
 
                 if href in seen:
@@ -38,24 +38,22 @@ class MainichiScraper(BaseScraper):
 
                 img = ''
                 if include_images:
-                    img_elem = article.select_one('img')
+                    img_elem = link.select_one('img')
                     if img_elem:
-                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
-
-                category = ''
-                cat_elem = article.select_one('.category, .section')
-                if cat_elem:
-                    category = cat_elem.get_text(strip=True)
+                        img = img_elem.get('src', '')
 
                 all_news.append({
                     'title': title,
                     'link': href,
                     'image': img,
                     'description': '',
-                    'category': category.upper() if category else 'NEWS'
+                    'category': 'NEWS'
                 })
+
+                if len(all_news) >= 30:
+                    break
         except Exception as e:
-            print(f"Error in get_home_news: {e}")
+            print(f"Error in Mainichi get_home_news: {e}")
 
         if not all_news:
             return self._get_japanese_news(include_images)
