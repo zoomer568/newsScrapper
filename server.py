@@ -1,18 +1,49 @@
 from flask import Flask, render_template, jsonify, request, send_file
+from bs4 import BeautifulSoup
 import os
-import tempfile
+import glob
+import importlib.util
+import sys
 import wave
 from io import BytesIO
 
-from scrapers.bbc import BBCScraper
-from scrapers.scmp import SCMPScraper
-
 app = Flask(__name__)
 
-SCRAPERS = {
-    'bbc': BBCScraper(),
-    'scmp': SCMPScraper()
-}
+# Dynamically load all scrapers from the scrapers folder
+SCRAPERS = {}
+
+def load_scrapers():
+    """Dynamically load all scraper modules from the scrapers folder"""
+    global SCRAPERS
+    SCRAPERS = {}
+    
+    scrapers_dir = os.path.join(os.path.dirname(__file__), 'scrapers')
+    
+    # Ensure parent dir is in path
+    parent_dir = os.path.dirname(__file__)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+    
+    # Import each scraper module to trigger register_scraper()
+    for filename in os.listdir(scrapers_dir):
+        if filename.endswith('.py') and not filename.startswith('_') and filename not in ('__init__.py', 'BaseScraper.py'):
+            module_name = f'scrapers.{filename[:-3]}'
+            try:
+                __import__(module_name)
+            except Exception as e:
+                print(f"Failed to import {module_name}: {e}")
+    
+    # Now get the registered scrapers
+    from scrapers import SCRAPERS as registered
+    for name, scraper_class in registered.items():
+        if isinstance(scraper_class, type):
+            SCRAPERS[name] = scraper_class()
+        else:
+            SCRAPERS[name] = scraper_class
+    
+    print(f"Loaded scrapers: {list(SCRAPERS.keys())}")
+
+load_scrapers()
 
 PIPER_AVAILABLE = False
 
@@ -48,35 +79,58 @@ def ensure_piper():
 ensure_piper()
 
 
+@app.route('/api/scrapers')
+def api_scrapers():
+    """Return list of available scrapers"""
+    return jsonify(list(SCRAPERS.keys()))
+
+
 @app.route('/api/sections')
 def api_sections():
     source = request.args.get('source', 'bbc')
-    scraper = SCRAPERS.get(source, SCRAPERS['bbc'])
+    default_scraper = list(SCRAPERS.values())[0] if SCRAPERS else None
+    scraper = SCRAPERS.get(source, default_scraper)
+    if not scraper:
+        return jsonify([])
     return jsonify(scraper.get_sections())
 
 def get_scraper():
     source = request.args.get('source', 'bbc')
-    return SCRAPERS.get(source, SCRAPERS['bbc'])
+    default_scraper = list(SCRAPERS.values())[0] if SCRAPERS else None
+    return SCRAPERS.get(source, default_scraper)
 
 
 @app.route('/')
-def index():
+@app.route('/article')
+def spa_route():
     return render_template('index.html')
 
 
 @app.route('/api/news')
 def api_news():
     scraper = get_scraper()
+    if not scraper:
+        return jsonify({'error': 'Scraper not found'}), 404
     include_images = request.args.get('images', 'true').lower() == 'true'
-    return jsonify(scraper.get_home_news(include_images))
+    try:
+        return jsonify(scraper.get_home_news(include_images))
+    except Exception as e:
+        print(f"Error in get_home_news: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/section')
 def api_section():
     scraper = get_scraper()
+    if not scraper:
+        return jsonify({'error': 'Scraper not found'}), 404
     section = request.args.get('section', 'technology')
     include_images = request.args.get('images', 'true').lower() == 'true'
-    return jsonify(scraper.get_section_news(section, include_images))
+    try:
+        return jsonify(scraper.get_section_news(section, include_images))
+    except Exception as e:
+        print(f"Error in get_section_news: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/images')
@@ -109,7 +163,10 @@ def article():
         return "No URL provided", 400
 
     source = request.args.get('source', 'bbc')
-    scraper = SCRAPERS.get(source, SCRAPERS['bbc'])
+    default_scraper = list(SCRAPERS.values())[0] if SCRAPERS else None
+    scraper = SCRAPERS.get(source, default_scraper)
+    if not scraper:
+        return "Scraper not available", 404
     theme = request.args.get('theme', 'aurora')
     article_data = scraper.get_article(url)
 
@@ -124,13 +181,48 @@ def article():
                          tts_available=PIPER_AVAILABLE)
 
 
-@app.route('/api/tts', methods=['POST'])
+@app.route('/api/article')
+def api_article():
+    url = request.args.get('url', '')
+    if not url:
+        return jsonify({'error': 'No URL provided'}), 400
+    
+    source = request.args.get('source', 'bbc')
+    default_scraper = list(SCRAPERS.values())[0] if SCRAPERS else None
+    scraper = SCRAPERS.get(source, default_scraper)
+    if not scraper:
+        return jsonify({'error': 'Scraper not available'}), 404
+    
+    article_data = scraper.get_article(url)
+    return jsonify(article_data)
+
+
+@app.route('/api/tts', methods=['POST', 'GET'])
 def api_tts():
     if not PIPER_AVAILABLE:
         return jsonify({'error': 'TTS not available'}), 503
 
-    data = request.get_json()
-    text = data.get('text', '')
+    if request.method == 'POST':
+        data = request.get_json()
+        text = data.get('text', '')
+    else:
+        url = request.args.get('url', '')
+        source = request.args.get('source', 'bbc')
+        
+        if not url:
+            return jsonify({'error': 'No URL provided'}), 400
+        
+        default_scraper = list(SCRAPERS.values())[0] if SCRAPERS else None
+        scraper = SCRAPERS.get(source, default_scraper)
+        if not scraper:
+            return jsonify({'error': 'Scraper not available'}), 404
+        article_data = scraper.get_article(url)
+        
+        title = article_data.get('title', '')
+        content = article_data.get('content', '')
+        
+        text = title + '. ' + ''.join([p.text for p in BeautifulSoup(content, 'html.parser').find_all('p')])[:2000]
+
     if not text:
         return jsonify({'error': 'No text provided'}), 400
 

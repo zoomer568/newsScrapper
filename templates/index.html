@@ -3,34 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BBC News - Latest Headlines</title>
+<title>News Aggregator</title>
 <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link id="theme-stylesheet" rel="stylesheet" href="/static/aurora.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; -webkit-font-smoothing: antialiased; }
-body { min-height: 100vh; background: var(--bg-primary); overflow-x: auto; position: relative; }
-.outlet-selector { position: fixed; top: 15px; left: 15px; z-index: 100; display: flex; align-items: center; background: var(--calc-bg); padding: 5px; border-radius: 25px; border: 1px solid var(--calc-border); }
-.outlet-toggle { position: relative; display: flex; background: var(--display-bg); border-radius: 20px; padding: 3px; }
-.outlet-slider { position: absolute; top: 3px; left: 3px; height: calc(100% - 6px); background: var(--orb-1); border-radius: 18px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
-.outlet-btn { position: relative; z-index: 2; padding: 8px 16px; border: none; background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; border-radius: 18px; transition: color 0.3s ease; font-family: 'Orbitron', sans-serif; }
-.outlet-btn.active { color: var(--bg-primary); }
-.outlet-btn:hover:not(.active) { color: var(--text-primary); }
-
+html, body { height: 100%; }
+body { min-height: 100vh; background: var(--bg-primary); overflow-x: hidden; position: relative; }
+#app { min-height: 100vh; }
+.outlet-selector { position: fixed; top: 15px; left: 15px; z-index: 100; display: flex; align-items: center; background: var(--calc-bg); padding: 5px 15px; border-radius: 25px; border: 1px solid var(--calc-border); height: 40px; }
+.outlet-select { background: var(--display-bg); border: none; color: var(--text-primary); padding: 8px 12px; border-radius: 18px; font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; outline: none; max-width: 150px; }
 .theme-selector { position: fixed; top: 15px; right: 15px; z-index: 100; display: flex; gap: 8px; align-items: flex-start; background: var(--calc-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--calc-border); }
 .theme-container { position: relative; }
 .theme-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; height: 36px; box-sizing: border-box; display: flex; align-items: center; }
 .theme-btn:hover { background: var(--operator-bg); }
 .theme-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 8px; overflow: hidden; z-index: 101; }
 .theme-menu.open { display: block; }
+.theme-menu.left { left: 0; right: auto; }
 .theme-option { display: block; width: 100%; padding: 10px 16px; background: transparent; border: none; color: var(--text-primary); font-size: 12px; cursor: pointer; text-align: left; font-family: 'Orbitron', sans-serif; }
 .theme-option:hover { background: var(--operator-bg); }
 .theme-option.active { background: var(--orb-1); color: var(--bg-primary); }
 .image-toggle-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
 .image-toggle-btn:hover { background: var(--operator-bg); }
-.eye-icon { width: 18px; height: 18px; }
 .image-toggle-btn.hidden .eye-icon { opacity: 0.3; transform: scaleX(0.8); }
-.image-toggle-btn.hidden .eye-icon path { stroke-dasharray: 4 2; }
+.eye-icon { width: 18px; height: 18px; }
+.tts-container { position: relative; }
+.tts-container:hover .tts-menu { display: block; }
+.tts-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.tts-btn:hover { background: var(--operator-bg); }
+.tts-btn.playing { background: var(--orb-1); color: var(--bg-primary); animation: glow 1.5s infinite; }
+.tts-btn.loading { background: var(--btn-bg); animation: spin 1s linear infinite; }
+.tts-icon { width: 18px; height: 18px; }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--orb-1); } 50% { box-shadow: 0 0 20px var(--orb-1); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.tts-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 8px; overflow: hidden; z-index: 101; min-width: 280px; max-height: 350px; overflow-y: auto; }
+.tts-menu.open { display: block; }
+.tts-progress-container { padding: 12px; background: var(--display-bg); border-bottom: 1px solid var(--calc-border); }
+.tts-progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 6px; }
+.tts-progress-bar { width: 100%; height: 6px; -webkit-appearance: none; appearance: none; background: var(--btn-bg); border-radius: 3px; outline: none; cursor: pointer; }
+.tts-progress-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--orb-1); border-radius: 50%; cursor: pointer; }
+.tts-progress-bar::-moz-range-thumb { width: 12px; height: 12px; background: var(--orb-1); border-radius: 50%; cursor: pointer; border: none; }
+.tts-queue-list { max-height: 200px; overflow-y: auto; }
+.tts-queue-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--calc-border); cursor: pointer; }
+.tts-queue-item:last-child { border-bottom: none; }
+.tts-queue-item:hover { background: var(--operator-bg); }
+.tts-queue-item.playing { background: var(--orb-1); color: var(--bg-primary); }
+.tts-queue-item.playing .tts-queue-title { color: var(--bg-primary); }
+.tts-queue-item.done { opacity: 0.5; }
+.tts-queue-title { flex: 1; color: var(--text-primary); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tts-queue-status { font-size: 10px; color: var(--text-secondary); }
+.tts-queue-remove { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; font-size: 14px; }
+.tts-queue-remove:hover { color: #ff4444; }
+.tts-empty { padding: 20px; text-align: center; color: var(--text-secondary); font-size: 12px; }
+.tts-menu-header { padding: 8px 12px; background: var(--display-bg); font-size: 10px; color: var(--text-secondary); border-bottom: 1px solid var(--calc-border); }
+.timer { position: absolute; top: 100%; right: 0; margin-top: 8px; font-size: 11px; color: var(--text-secondary); font-family: 'Orbitron', sans-serif; white-space: nowrap; }
 .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
 .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; will-change: transform; animation: float 15s infinite ease-in-out; }
 .orb-1 { width: 300px; height: 300px; background: var(--orb-1); top: -80px; left: -80px; }
@@ -61,23 +88,59 @@ header .subtitle { color: var(--orb-1); font-size: 14px; letter-spacing: 2px; ma
 .timer { text-align: center; color: var(--text-secondary); font-size: 12px; margin-top: 10px; }
 .timer.active { color: var(--orb-1); }
 .footer { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 12px; }
+.back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: var(--btn-bg); color: var(--text-primary); border: 1px solid var(--btn-border); border-radius: 8px; text-decoration: none; font-size: 14px; cursor: pointer; }
+.back-btn:hover { background: var(--operator-bg); }
+.article-card { background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 20px; padding: 20px; max-width: 700px; margin: 0 auto; }
+.article-card img { width: 100%; max-height: 350px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; }
+.article-title { color: var(--text-primary); font-size: 24px; font-weight: 700; margin-bottom: 15px; line-height: 1.3; }
+.article-content { color: var(--text-secondary); line-height: 1.6; font-family: 'Roboto', sans-serif; font-size: 15px; }
+.article-content p { margin-bottom: 12px; }
+.article-content h3 { color: var(--text-primary); font-size: 18px; margin: 20px 0 12px; font-family: 'Orbitron', sans-serif; }
+.source-link { display: block; margin-top: 20px; padding: 12px; background: var(--display-bg); border-radius: 10px; text-align: center; }
+.source-link a { color: var(--orb-1); text-decoration: none; }
+.related-title { color: var(--text-primary); font-size: 18px; margin: 20px 0 15px; text-align: center; }
+.related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; max-width: 700px; margin: 0 auto; }
+.related-card { background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.related-card:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+.related-card img { width: 100%; height: 100px; object-fit: cover; background: var(--display-bg); }
+.related-content { padding: 10px; display: flex; align-items: center; gap: 8px; }
+.related-title-text { color: var(--text-primary); font-size: 13px; line-height: 1.4; flex: 1; }
+.queue-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.queue-btn:hover { background: var(--orb-1); color: var(--bg-primary); }
 @media (max-width: 600px) {
 .container { padding: 70px 15px; }
 header h1 { font-size: 24px; }
 .news-grid { grid-template-columns: 1fr; }
+.container.article-view { max-width: 800px; }
 }
 </style>
 </head>
 <body>
+<div id="app">
 <div class="outlet-selector">
-    <div class="outlet-toggle" id="outlet-toggle">
-        <button class="outlet-btn active" data-outlet="bbc">BBC</button>
-        <button class="outlet-btn" data-outlet="scmp">SCMP</button>
-        <button class="outlet-btn" data-outlet="cnn">CNN</button>
-        <button class="outlet-btn" data-outlet="reuters">Reuters</button>
-    </div>
+<select class="outlet-select" id="outlet-select" onchange="changeOutlet(this.value)">
+<option value="">Loading...</option>
+</select>
 </div>
 <div class="theme-selector">
+<div class="tts-container">
+<button id="tts-btn" class="tts-btn" onclick="playOrPauseTTS()" title="Text to Speech">
+<svg class="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+</svg>
+</button>
+<div id="tts-menu" class="tts-menu" onclick="event.stopPropagation()">
+<div class="tts-progress-container">
+<div class="tts-progress-label">
+<span id="tts-current-title">Not playing</span>
+<span id="tts-time">0:00 / 0:00</span>
+</div>
+<input type="range" class="tts-progress-bar" id="tts-progress" min="0" max="100" value="0">
+</div>
+<div class="tts-menu-header">Queue • Click item to play</div>
+<div class="tts-queue-list" id="tts-queue-list"></div>
+</div>
+    </div>
     <div class="theme-container">
         <button id="theme-btn" class="theme-btn" onclick="toggleThemeMenu()">Theme ▾</button>
         <div id="theme-menu" class="theme-menu">
@@ -89,25 +152,521 @@ header h1 { font-size: 24px; }
         </div>
     </div>
     <button id="image-toggle" class="image-toggle-btn" onclick="toggleImages()">
-    <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  </button>
+        <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+    </button>
+    <div id="timer" class="timer"></div>
 </div>
 <div class="bg-animation">
 <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
 </div>
 <div class="grid-lines" id="grid-lines"></div>
-<div class="container">
+<div class="container" id="main-container">
 <header><h1 id="header-title">BBC NEWS</h1><div class="subtitle">Latest Headlines</div></header>
-<div class="section-nav" id="section-nav">
-    <div class="loading">Loading sections...</div>
-</div>
-<button class="refresh-btn" onclick="loadCurrentSection()">REFRESH</button>
-  <div class="news-grid" id="news-grid"><div class="loading">Loading...</div></div>
+<div class="section-nav" id="section-nav"><div class="loading">Loading...</div></div>
+<button class="refresh-btn" onclick="loadNews()">REFRESH</button>
+<div class="news-grid" id="news-grid"><div class="loading">Loading...</div></div>
 <div class="footer">BBC News • Themeable</div>
 </div>
-<script src="/static/main.js"></script>
+</div>
+<script>
+const themes = { aurora: 'aurora.css', sunset: 'sunset.css', forest: 'forest.css', midnight: 'midnight.css', neon: 'neon.css' };
+let currentTheme = localStorage.getItem('newsTheme') || 'aurora';
+let currentOutlet = localStorage.getItem('newsOutlet') || 'bbc';
+let showImages = localStorage.getItem('showImages') !== 'false';
+let currentSection = 'home';
+let linkElement = document.getElementById('theme-stylesheet');
+
+let audioContext, audioBlobUrl, ttsAudio, isTTSPlaying = false, isTTSLoading = false, ttsQueue = [];
+let windowAudio = window.ttsAudio;
+
+let currentArticleTitle = '';
+let currentArticleUrl = '';
+let outletNames = {};
+
+function loadOutlets() {
+    fetch('/api/scrapers')
+    .then(r => r.json())
+    .then(outlets => {
+        const select = document.getElementById('outlet-select');
+        if (!select) return;
+        
+        select.innerHTML = '';
+        
+        outlets.forEach(outlet => {
+            const option = document.createElement('option');
+            option.value = outlet;
+            option.textContent = outlet.toUpperCase();
+            outletNames[outlet] = outlet.toUpperCase() + ' NEWS';
+            select.appendChild(option);
+        });
+        
+        select.value = currentOutlet;
+        loadSections();
+        loadNews();
+    })
+    .catch(e => console.error('Failed to load outlets:', e));
+}
+
+function changeOutlet(outlet) {
+    if (!outlet) return;
+    currentOutlet = outlet;
+    localStorage.setItem('newsOutlet', outlet);
+    document.getElementById('header-title').textContent = outletNames[outlet] || 'NEWS';
+    document.querySelector('.footer').textContent = (outletNames[outlet] || outlet.toUpperCase()) + ' • Themeable';
+    loadSections();
+    loadNews();
+}
+
+function toggleQueueMenu() {
+    const menu = document.getElementById('tts-menu');
+    menu.classList.toggle('open');
+}
+
+function playOrPauseTTS() {
+    if (isTTSPlaying) {
+        pauseTTS();
+    } else if (isTTSLoading) {
+        return;
+    } else if (ttsQueue.length > 0) {
+        processNextInQueue();
+    } else if (currentArticleUrl) {
+        // Play current article if viewing one
+        addToQueue(currentArticleUrl, window.currentSource || currentOutlet, currentArticleTitle);
+    }
+}
+
+function pauseTTS() {
+    if (ttsAudio) {
+        ttsAudio.pause();
+    }
+    isTTSPlaying = false;
+    const btn = document.getElementById('tts-btn');
+    btn.classList.remove('playing');
+    document.getElementById('tts-current-title').textContent = 'Paused';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+    const container = document.querySelector('.tts-container');
+    const menu = document.getElementById('tts-menu');
+    if (container && !container.contains(e.target)) {
+        menu.classList.remove('open');
+    }
+});
+
+function updateQueueDisplay() {
+    const list = document.getElementById('tts-queue-list');
+    if (!list) return;
+    
+    if (ttsQueue.length === 0) {
+        list.innerHTML = '<div class="tts-empty">No items in queue</div>';
+        return;
+    }
+    
+    list.innerHTML = ttsQueue.map((item, i) => {
+        let statusIcon = '⏸';
+        let statusClass = '';
+        if (item.status === 'playing') {
+            statusIcon = '▶';
+            statusClass = 'playing';
+        } else if (item.status === 'done') {
+            statusIcon = '✓';
+            statusClass = 'done';
+        } else if (item.status === 'loading') {
+            statusIcon = '⏳';
+        }
+        return '<div class="tts-queue-item ' + statusClass + '" onclick="playQueueItem(' + i + ')">' +
+            '<span class="tts-queue-status">' + statusIcon + '</span>' +
+            '<span class="tts-queue-title" title="' + item.title + '">' + item.title + '</span>' +
+            '<button class="tts-queue-remove" onclick="event.stopPropagation(); removeFromQueue(' + i + ')">×</button></div>';
+    }).join('');
+}
+
+function removeFromQueue(index) {
+    if (index === 0 && (isTTSPlaying || isTTSLoading)) {
+        if (windowAudio) {
+            windowAudio.pause();
+            windowAudio = null;
+            window.ttsAudio = null;
+        }
+        isTTSPlaying = false;
+        isTTSLoading = false;
+    }
+    ttsQueue.splice(index, 1);
+    updateQueueDisplay();
+    updateTimer();
+}
+
+function playQueueItem(index) {
+    const item = ttsQueue[index];
+    if (!item) return;
+    
+    if (index === 0 && !isTTSPlaying && !isTTSLoading) {
+        processNextInQueue();
+    }
+    document.getElementById('tts-menu').classList.remove('open');
+}
+
+function updateTimer() {
+    const timerEl = document.getElementById('timer');
+    if (!timerEl) return;
+    if (ttsQueue.length > 0) {
+        const status = isTTSPlaying ? '▶' : isTTSLoading ? '⏳' : '⏸';
+        timerEl.textContent = 'Q:' + ttsQueue.length + ' ' + status;
+    } else if (windowAudio && windowAudio.duration) {
+        const remaining = Math.max(0, Math.ceil(windowAudio.duration - windowAudio.currentTime));
+        timerEl.textContent = 'TTS: ' + remaining + 's';
+    } else {
+        timerEl.textContent = '';
+    }
+}
+
+function updateProgressBar() {
+    const progress = document.getElementById('tts-progress');
+    const currentTitle = document.getElementById('tts-current-title');
+    const timeDisplay = document.getElementById('tts-time');
+    
+    if (!progress || !currentTitle || !timeDisplay) return;
+    
+    if (windowAudio && windowAudio.duration) {
+        const percent = (windowAudio.currentTime / windowAudio.duration) * 100;
+        progress.value = percent;
+        
+        const formatTime = (s) => {
+            const mins = Math.floor(s / 60);
+            const secs = Math.floor(s % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+        
+        currentTitle.textContent = currentArticleTitle || 'Playing';
+        timeDisplay.textContent = formatTime(windowAudio.currentTime) + ' / ' + formatTime(windowAudio.duration);
+    } else {
+        progress.value = 0;
+        currentTitle.textContent = isTTSPlaying ? 'Playing...' : 'Not playing';
+        timeDisplay.textContent = '0:00 / 0:00';
+    }
+}
+
+function seekTTS(e) {
+    const progress = document.getElementById('tts-progress');
+    if (windowAudio && progress) {
+        const percent = parseFloat(progress.value);
+        windowAudio.currentTime = (percent / 100) * windowAudio.duration;
+    }
+}
+
+function toggleThemeMenu() {
+    document.getElementById('theme-menu').classList.toggle('open');
+}
+
+function setTheme(theme) {
+    currentTheme = theme;
+    localStorage.setItem('newsTheme', theme);
+    linkElement.href = '/static/' + themes[theme];
+    document.querySelectorAll('.theme-option').forEach(opt => opt.classList.toggle('active', opt.dataset.theme === theme));
+    document.getElementById('theme-menu').classList.remove('open');
+    history.replaceState({page: 'home', theme: theme, source: currentOutlet}, '', '/?theme=' + theme + '&source=' + currentOutlet);
+}
+
+function toggleImages() {
+    showImages = !showImages;
+    localStorage.setItem('showImages', showImages);
+    document.getElementById('image-toggle').classList.toggle('hidden', !showImages);
+    document.querySelectorAll('img').forEach(img => img.style.display = showImages ? '' : 'none');
+}
+
+function navigateToArticle(url, source) {
+    const theme = currentTheme;
+    history.pushState({page: 'article', url: url, theme: theme, source: source}, '', '/article?url=' + url + '&theme=' + theme + '&source=' + source);
+    loadArticle(url, source);
+}
+
+function goBack() {
+    if (history.length > 1) {
+        history.back();
+    } else {
+        showHome();
+    }
+}
+
+function showHome() {
+    history.pushState({page: 'home', theme: currentTheme, source: currentOutlet}, '', '/?theme=' + currentTheme + '&source=' + currentOutlet);
+    const container = document.getElementById('main-container');
+    container.classList.remove('article-view');
+    container.innerHTML = '<header><h1 id="header-title">' + currentOutlet.toUpperCase() + ' NEWS</h1><div class="subtitle">Latest Headlines</div></header><div class="section-nav" id="section-nav"><div class="loading">Loading...</div></div><button class="refresh-btn" onclick="loadNews()">REFRESH</button><div class="news-grid" id="news-grid"><div class="loading">Loading...</div></div><div class="footer">' + currentOutlet.toUpperCase() + ' News • Themeable</div>';
+    currentArticleUrl = '';
+    currentArticleTitle = '';
+    loadSections();
+}
+
+function loadArticle(url, source) {
+    const container = document.getElementById('main-container');
+    container.classList.add('article-view');
+    container.innerHTML = '<div class="loading">Loading article...</div>';
+    
+    fetch('/api/article?url=' + encodeURIComponent(url) + '&source=' + source)
+        .then(r => r.json())
+        .then(data => {
+            const relatedHtml = (data.related_news || []).map(item => 
+                '<div class="related-card" onclick="navigateToArticle(\'' + item.link + '\', \'' + source + '\')">' +
+                (item.image ? '<img src="' + item.image + '">' : '') +
+                '<div class="related-content"><div class="related-title-text">' + item.title + '</div></div></div>'
+            ).join('');
+            
+            container.innerHTML = '<a class="back-btn" onclick="showHome()">← Back to News</a>' +
+                '<div class="article-card">' + (data.image ? '<img src="' + data.image + '">' : '') +
+                '<h1 class="article-title">' + data.title + '</h1>' +
+                '<div class="article-content">' + data.content + '</div></div>' +
+                (relatedHtml ? '<h2 class="related-title">Related News</h2><div class="related-grid">' + relatedHtml + '</div>' : '');
+            
+window.originalUrl = url;
+window.currentSource = source;
+currentArticleTitle = data.title || 'Article';
+currentArticleUrl = url;
+if (!showImages) {
+                document.querySelectorAll('img').forEach(img => img.style.display = 'none');
+            }
+        });
+}
+
+function loadSections() {
+    fetch('/api/sections?source=' + currentOutlet)
+        .then(r => r.json())
+        .then(sections => {
+            const nav = document.getElementById('section-nav');
+            if (!sections || !sections.length) {
+                nav.innerHTML = '<div class="error">No sections</div>';
+                return;
+            }
+            nav.innerHTML = sections.map(s => 
+                '<button class="section-btn" onclick="loadSection(\'' + s.id + '\', this)">' + s.name + '</button>'
+            ).join('');
+            loadNews();
+        });
+}
+
+function loadSection(section, btn) {
+    currentSection = section;
+    document.querySelectorAll('.section-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    loadNews();
+}
+
+function loadNews() {
+    const grid = document.getElementById('news-grid');
+    grid.innerHTML = '<div class="loading">Loading...</div>';
+    
+    const url = currentSection === 'home' ? '/api/news?source=' + currentOutlet : '/api/section?section=' + currentSection + '&source=' + currentOutlet;
+fetch(url)
+.then(r => r.json())
+.then(news => {
+    currentNewsData = news;
+    grid.innerHTML = news.map((item, idx) => {
+        const tags = (item.category || '').split(',').map(t => t.trim()).filter(t => t);
+        const tagHtml = tags.length ? tags.map(t => '<span>' + t + '</span>').join('') : '<span>News</span>';
+        return '<div class="news-card" data-index="' + idx + '" onclick="navigateToArticle(\'' + item.link + '\', \'' + currentOutlet + '\')">' +
+        (item.image ? '<img src="' + item.image + '" style="display:' + (showImages ? '' : 'none') + '">' : '') +
+        '<div class="news-content"><div class="news-category">' + tagHtml + '</div>' +
+        '<div class="news-title">' + item.title + '</div>' +
+        '<div class="news-desc">' + item.description + '</div></div>' +
+        '<button class="queue-btn" onclick="event.stopPropagation(); addToQueue(\'' + item.link + '\', \'' + currentOutlet + '\', \'' + item.title.replace(/'/g, "\\'") + '\')">+</button></div>';
+    }).join('');
+});
+}
+
+function initOutletSlider() {
+    const toggleContainer = document.getElementById('outlet-toggle');
+    if (!toggleContainer) return;
+
+    const existingSlider = toggleContainer.querySelector('.outlet-slider');
+    if (existingSlider) existingSlider.remove();
+
+    const slider = document.createElement('div');
+    slider.className = 'outlet-slider';
+    toggleContainer.appendChild(slider);
+
+    function updateSliderPosition() {
+        const activeBtn = document.querySelector('.outlet-btn.active');
+        if (activeBtn && slider) {
+            slider.style.width = activeBtn.offsetWidth + 'px';
+            slider.style.transform = 'translateX(' + activeBtn.offsetLeft + 'px)';
+        }
+    }
+
+    document.querySelectorAll('.outlet-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const outlet = btn.dataset.outlet;
+            document.querySelectorAll('.outlet-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateSliderPosition();
+            currentOutlet = outlet;
+            localStorage.setItem('newsOutlet', outlet);
+            document.getElementById('header-title').textContent = outletNames[outlet] || 'NEWS';
+            document.querySelector('.footer').textContent = (outletNames[outlet] || outlet.toUpperCase()) + ' • Themeable';
+            loadSections();
+        });
+    });
+
+    setTimeout(updateSliderPosition, 100);
+    window.addEventListener('resize', updateSliderPosition);
+}
+
+function addToQueue(url, source, title) {
+    ttsQueue.push({url, source, title: title || 'Article', status: 'pending'});
+    updateQueueDisplay();
+    updateTimer();
+    if (!isTTSPlaying && !isTTSLoading && ttsQueue.length === 1) {
+        processNextInQueue();
+    }
+}
+
+function processNextInQueue() {
+    if (ttsQueue.length === 0 || isTTSPlaying || isTTSLoading) return;
+    
+    const btn = document.getElementById('tts-btn');
+    const item = ttsQueue[0];
+    item.status = 'loading';
+    isTTSLoading = true;
+    btn.classList.add('loading');
+    updateQueueDisplay();
+    
+    fetch('/api/tts?url=' + encodeURIComponent(item.url) + '&source=' + item.source)
+        .then(r => {
+            if (!r.ok) throw new Error('TTS failed');
+            return r.arrayBuffer();
+        })
+        .then(buf => {
+            isTTSLoading = false;
+            btn.classList.remove('loading');
+            
+            if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+            const blob = new Blob([buf], {type: 'audio/wav'});
+            audioBlobUrl = URL.createObjectURL(blob);
+            
+            windowAudio = new Audio(audioBlobUrl);
+            window.ttsAudio = windowAudio;
+            
+            windowAudio.onended = () => {
+                isTTSPlaying = false;
+                btn.classList.remove('playing');
+                item.status = 'done';
+                
+                if (ttsQueue.length > 1) {
+                    ttsQueue.shift();
+                    updateQueueDisplay();
+                    if (ttsQueue.length > 0) {
+                        const nextItem = ttsQueue[0];
+                        nextItem.title = 'Now reading: ' + nextItem.title;
+                        updateQueueDisplay();
+                        processNextInQueue();
+                    }
+                } else {
+                    ttsQueue.shift();
+                    updateQueueDisplay();
+                    updateTimer();
+                }
+            };
+            
+            windowAudio.onerror = () => {
+                isTTSPlaying = false;
+                btn.classList.remove('playing');
+                console.error('Audio error');
+                ttsQueue.shift();
+                updateQueueDisplay();
+                if (ttsQueue.length > 0) processNextInQueue();
+            };
+            
+            windowAudio.play();
+            isTTSPlaying = true;
+            btn.classList.add('playing');
+            item.status = 'playing';
+            currentArticleTitle = item.title;
+            updateQueueDisplay();
+            updateTimer();
+        })
+        .catch(err => {
+            console.error('TTS:', err);
+            isTTSLoading = false;
+            isTTSPlaying = false;
+            btn.classList.remove('loading', 'playing');
+            ttsQueue.shift();
+            if (ttsQueue.length > 0) processNextInQueue();
+        });
+}
+
+function toggleTTS() {
+    const btn = document.getElementById('tts-btn');
+    const url = window.originalUrl;
+    const source = window.currentSource || currentOutlet;
+    const title = currentArticleTitle || 'Article';
+    
+    if (isTTSPlaying || isTTSLoading) {
+        if (windowAudio) {
+            windowAudio.pause();
+            windowAudio = null;
+            window.ttsAudio = null;
+        }
+        isTTSPlaying = false;
+        isTTSLoading = false;
+        btn.classList.remove('playing', 'loading');
+        ttsQueue = [];
+        updateQueueDisplay();
+        updateTimer();
+        return;
+    }
+    
+    document.getElementById('tts-menu').classList.remove('open');
+    if (url) {
+        addToQueue(url, source, title);
+    }
+}
+
+window.addEventListener('popstate', e => {
+    const state = e.state || history.state;
+    if (state && state.page === 'home') {
+        showHome();
+    } else if (state && state.page === 'article') {
+        loadArticle(state.url, state.source);
+    }
+});
+
+document.addEventListener('click', e => {
+    const themeMenu = document.getElementById('theme-menu');
+    const themeBtn = document.getElementById('theme-btn');
+    if (themeMenu && !themeMenu.contains(e.target) && themeBtn && !themeBtn.contains(e.target)) {
+        themeMenu.classList.remove('open');
+    }
+    const ttsMenu = document.getElementById('tts-menu');
+    const ttsBtn = document.getElementById('tts-btn');
+    if (ttsMenu && !ttsMenu.contains(e.target) && ttsBtn && !ttsBtn.contains(e.target)) {
+        ttsMenu.classList.remove('open');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    linkElement.href = '/static/' + themes[currentTheme];
+    document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.theme === currentTheme);
+    });
+    document.getElementById('image-toggle').classList.toggle('hidden', !showImages);
+    
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get('url');
+    const source = params.get('source') || currentOutlet;
+    currentOutlet = source;
+    
+if (url) {
+    loadArticle(url, source);
+} else {
+    history.replaceState({page: 'home', theme: currentTheme, source: currentOutlet}, '', '/?theme=' + currentTheme + '&source=' + currentOutlet);
+    loadOutlets();
+}
+    
+    setInterval(() => { updateTimer(); updateProgressBar(); }, 200);
+document.getElementById('tts-progress').addEventListener('input', seekTTS);
+});
+</script>
 </body>
 </html>

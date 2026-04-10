@@ -3,12 +3,17 @@ import re
 import wave
 import io
 import threading
+import multiprocessing
 
-PIPER_MODEL_PATH = '/workspaces/codespaces-blank/en_US-lessac-medium.onnx'
+PIPER_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'en_US-lessac-medium.onnx')
 
 piper_available = False
 piper_voice = None
 _lock = threading.Lock()
+
+# Check CPU cores for multiprocessing
+CPU_CORES = multiprocessing.cpu_count()
+print(f"CPU cores available: {CPU_CORES}")
 
 def init_piper():
     global piper_available, piper_voice
@@ -19,6 +24,7 @@ def init_piper():
                 piper_voice = PiperVoice.load(PIPER_MODEL_PATH)
             piper_available = True
             print(f"Piper TTS loaded: {PIPER_MODEL_PATH}")
+            print(f"Piper uses ONNX runtime - leverages CPU with optimizations")
     except Exception as e:
         print(f"Piper TTS init failed: {e}")
 

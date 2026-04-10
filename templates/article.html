@@ -23,6 +23,14 @@ body { background: var(--bg-primary); position: relative; }
 .image-toggle-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
 .image-toggle-btn:hover { background: var(--operator-bg); }
 .eye-icon { width: 18px; height: 18px; }
+.tts-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px; border-radius: 8px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.tts-btn:hover { background: var(--operator-bg); }
+.tts-btn.playing { background: var(--orb-1); color: var(--bg-primary); animation: glow 1.5s infinite; }
+.tts-btn.loading { background: var(--btn-bg); animation: spin 1s linear infinite; }
+.tts-icon { width: 20px; height: 20px; }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--orb-1); } 50% { box-shadow: 0 0 20px var(--orb-1); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.timer { position: absolute; top: 100%; right: 0; margin-top: 8px; font-size: 11px; color: var(--text-secondary); font-family: 'Orbitron', sans-serif; white-space: nowrap; }
 .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none; }
 .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; will-change: transform; animation: float 15s infinite ease-in-out; }
 .orb-1 { width: 300px; height: 300px; background: var(--orb-1); top: -80px; left: -80px; }
@@ -46,8 +54,10 @@ body { background: var(--bg-primary); position: relative; }
 .related-card:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
 .related-card img { width: 100%; height: 120px; object-fit: cover; background: var(--display-bg); }
 .related-placeholder { width: 100%; height: 120px; background: var(--display-bg); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; }
-.related-content { padding: 12px; }
-.related-title-text { color: var(--text-primary); font-size: 14px; line-height: 1.4; }
+.related-content { padding: 12px; display: flex; align-items: center; gap: 8px; }
+.related-title-text { color: var(--text-primary); font-size: 14px; line-height: 1.4; flex: 1; }
+.queue-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.queue-btn:hover { background: var(--orb-1); color: var(--bg-primary); }
 .tts-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--btn-bg); border: 1px solid var(--btn-border); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; margin-bottom: 15px; }
 .tts-btn:hover { background: var(--operator-bg); }
 .tts-btn.playing { background: var(--orb-1); color: var(--bg-primary); }
@@ -58,6 +68,12 @@ body { background: var(--bg-primary); position: relative; }
 </head>
 <body data-original-url="{{ original_url }}">
 <div class="theme-selector">
+    <button id="tts-btn" class="tts-btn" onclick="toggleTTS()" title="Text to Speech">
+        <svg class="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+        </svg>
+    </button>
     <div class="theme-container">
         <button id="theme-btn" class="theme-btn" onclick="toggleThemeMenu()">Theme ▾</button>
         <div id="theme-menu" class="theme-menu">
@@ -74,21 +90,13 @@ body { background: var(--bg-primary); position: relative; }
           <circle cx="12" cy="12" r="3"/>
         </svg>
     </button>
+    <div id="timer" class="timer"></div>
 </div>
 <div class="bg-animation">
 <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
 </div>
 <div class="container">
-<a href="/" class="back-btn">← Back to News</a>
-{% if tts_available %}
-<button class="tts-btn" id="tts-btn" onclick="toggleTTS()">
-    <svg class="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-    </svg>
-    <span id="tts-text">Read Aloud</span>
-</button>
-{% endif %}
+<a href="javascript:void(0)" class="back-btn" onclick="goBack()">← Back to News</a>
 <div class="article-card">
 {% if image %}<img src="{{ image }}" alt="">{% endif %}
 <h1 class="article-title">{{ title }}</h1>
@@ -98,9 +106,10 @@ body { background: var(--bg-primary); position: relative; }
 <div class="related-grid" id="related-grid">
 {% for item in related_news %}
 <div class="related-card" data-index="{{ loop.index0 }}" onclick="window.location.href='/article?url={{ item.link }}&theme={{ theme }}&source={{ source }}'">
-<div class="related-placeholder">Loading...</div>
+{% if item.image %}<img src="{{ item.image }}" alt="">{% else %}<div class="related-placeholder">Loading...</div>{% endif %}
 <div class="related-content">
 <div class="related-title-text">{{ item.title }}</div>
+<button class="queue-btn" onclick="event.stopPropagation(); addToQueueFromCard('{{ item.link }}', '{{ source }}')">+</button>
 </div>
 </div>
 {% endfor %}

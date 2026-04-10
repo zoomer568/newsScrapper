@@ -13,7 +13,7 @@ class SCMPScraper(BaseScraper):
             'Accept-Language': 'en-US,en;q=0.5',
         }
 
-    def get_home_news(self):
+    def get_home_news(self, include_images=True):
         all_news = []
         seen = set()
 
@@ -79,7 +79,7 @@ class SCMPScraper(BaseScraper):
 
         return all_news[:30]
 
-    def get_section_news(self, section):
+    def get_section_news(self, section, include_images=True):
         all_news = []
         seen = set()
 
@@ -138,110 +138,84 @@ class SCMPScraper(BaseScraper):
         return all_news
 
     def get_related_news(self, url):
+        from urllib.parse import urlparse, urljoin
         related_news = []
-        seen = {url}
+        parsed_url = urlparse(url)
+        article_id = parsed_url.path.split('/article/')[-1].split('/')[0] if '/article/' in parsed_url.path else ''
+        base_article_path = parsed_url.path.split('/article/')[0] if '/article/' in parsed_url.path else ''
 
         try:
-            from urllib.parse import urlparse
-            parsed = urlparse(url)
-            path = parsed.path
-            if not path.endswith('/'):
-                path = path + '/'
-            clean_url = f'{parsed.scheme}://{parsed.netloc}{path}'
-            
-            resp = requests.get(clean_url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.text, 'html.parser')
+            section = ''
+            if '/news/china/' in url or '/china/' in url:
+                section = '/news/china'
+            elif '/news/hong-kong/' in url:
+                section = '/news/hong-kong'
+            elif '/news/world/' in url:
+                section = '/news/world'
+            elif '/business/' in url or '/economy/' in url:
+                section = '/business'
+            elif '/tech/' in url:
+                section = '/tech'
+            elif '/sport/' in url:
+                section = '/sport'
+            elif '/lifestyle/' in url:
+                section = '/lifestyle'
+            else:
+                section = '/news'
 
-            related_selectors = [
-                ('div', {'class': lambda x: x and 'related' in str(x).lower() if x else False}),
-                ('section', {'class': lambda x: x and 'related' in str(x).lower() if x else False}),
-                ('div', {'data-component': 'related-articles'}),
-                ('aside', {'class': lambda x: x and 'related' in str(x).lower() if x else False}),
-            ]
+            resp = requests.get(f'{self.base_url}{section}', headers=self.headers, timeout=10)
+            section_soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for tag, attrs in related_selectors:
-                related_section = soup.find(tag, attrs)
-                if related_section:
-                    links = related_section.find_all('a', href=lambda x: x and '/article/' in x if x else False)
-                    for a in links[:10]:
-                        href = a.get('href', '')
-                        if not href:
-                            continue
-                        if not href.startswith('/'):
-                            continue
-                        if '/plus/' in href:
-                            continue
-                        if href in seen:
-                            continue
-                        seen.add(href)
-                        
-                        title = a.get_text(strip=True)
-                        if not title or len(title) < 15:
-                            continue
-                        
-                        full_url = self.base_url + href
-                        related_news.append({
-                            'title': title,
-                            'link': full_url,
-                            'image': '',
-                            'category': 'RELATED'
-                        })
-                        
-                        if len(related_news) >= 6:
-                            break
-                    
-                    if related_news:
-                        break
+            seen_ids = {article_id}
+            all_links = section_soup.find_all('a', href=True)
+            links = [a for a in all_links if '/article/' in a.get('href', '')]
 
-            if not related_news:
-                section = ''
-                if '/news/china/' in url:
-                    section = '/news/china'
-                elif '/news/hong-kong/' in url:
-                    section = '/news/hong-kong'
-                elif '/news/world/' in url:
-                    section = '/news/world'
-                elif '/business/' in url:
-                    section = '/business'
-                elif '/tech/' in url:
-                    section = '/tech'
+            section_path = section.replace('/news/', '/news/').replace('/', '') if '/news/' in section else section.replace('/', '')
+
+            for a in links:
+                href = a.get('href', '')
+                if not href:
+                    continue
+                if '/plus/' in href:
+                    continue
+
+                full_url = urljoin(self.base_url, href)
+                parsed_link = urlparse(full_url)
+                link_path = parsed_link.path
+
+                if section == '/news':
+                    if '/news/' not in link_path:
+                        continue
+                elif section == '/business':
+                    if '/business/' not in link_path and '/economy/' not in link_path:
+                        continue
+                elif section == '/tech':
+                    if '/tech/' not in link_path:
+                        continue
                 else:
-                    section = '/news'
+                    if section not in link_path:
+                        continue
 
-                try:
-                    resp = requests.get(f'{self.base_url}{section}', headers=self.headers, timeout=10)
-                    section_soup = BeautifulSoup(resp.text, 'html.parser')
+                link_id = link_path.split('/article/')[-1].split('/')[0] if '/article/' in link_path else ''
 
-                    all_links = section_soup.find_all('a', href=True)
-                    links = [a for a in all_links if '/article/' in a.get('href', '') and not a.get('href', '').startswith('http')]
+                if link_id in seen_ids:
+                    continue
+                seen_ids.add(link_id)
 
-                    for a in links[:30]:
-                        href = a.get('href', '')
-                        if not href:
-                            continue
-                        if '/plus/' in href:
-                            continue
-                        if href in seen:
-                            continue
-                        seen.add(href)
+                title = a.get_text(strip=True)
+                if not title or len(title) < 15:
+                    continue
 
-                        title = a.get_text(strip=True)
-                        if not title or len(title) < 15:
-                            continue
+                img = self.get_article_image(full_url) if hasattr(self, 'get_article_image') else ''
+                related_news.append({
+                    'title': title,
+                    'link': full_url,
+                    'image': img,
+                    'category': 'RELATED'
+                })
 
-                        full_url = self.base_url + href
-
-                        related_news.append({
-                            'title': title,
-                            'link': full_url,
-                            'image': '',
-                            'category': 'RELATED'
-                        })
-
-                        if len(related_news) >= 6:
-                            break
-                except Exception as e:
-                    print(f"Error getting related from section: {e}")
+                if len(related_news) >= 6:
+                    break
 
         except Exception as e:
             print(f"Error getting related news: {e}")
