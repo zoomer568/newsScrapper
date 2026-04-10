@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBC News - Latest Headlines</title>
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link id="theme-stylesheet" rel="stylesheet" href="/static/aurora.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; background: var(--bg-primary); overflow-x: auto; position: relative; }
+.outlet-selector { position: fixed; top: 15px; left: 15px; z-index: 100; display: flex; align-items: center; background: var(--calc-bg); padding: 5px; border-radius: 25px; border: 1px solid var(--calc-border); }
+.outlet-toggle { position: relative; display: flex; background: var(--display-bg); border-radius: 20px; padding: 3px; }
+.outlet-slider { position: absolute; top: 3px; left: 3px; height: calc(100% - 6px); background: var(--orb-1); border-radius: 18px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+.outlet-btn { position: relative; z-index: 2; padding: 8px 16px; border: none; background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; border-radius: 18px; transition: color 0.3s ease; font-family: 'Orbitron', sans-serif; }
+.outlet-btn.active { color: var(--bg-primary); }
+.outlet-btn:hover:not(.active) { color: var(--text-primary); }
+
+.theme-selector { position: fixed; top: 15px; right: 15px; z-index: 100; display: flex; gap: 8px; align-items: flex-start; background: var(--calc-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--calc-border); }
+.theme-container { position: relative; }
+.theme-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; height: 36px; box-sizing: border-box; display: flex; align-items: center; }
+.theme-btn:hover { background: var(--operator-bg); }
+.theme-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 8px; overflow: hidden; z-index: 101; }
+.theme-menu.open { display: block; }
+.theme-option { display: block; width: 100%; padding: 10px 16px; background: transparent; border: none; color: var(--text-primary); font-size: 12px; cursor: pointer; text-align: left; font-family: 'Orbitron', sans-serif; }
+.theme-option:hover { background: var(--operator-bg); }
+.theme-option.active { background: var(--orb-1); color: var(--bg-primary); }
+.image-toggle-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.image-toggle-btn:hover { background: var(--operator-bg); }
+.eye-icon { width: 18px; height: 18px; }
+.image-toggle-btn.hidden .eye-icon { opacity: 0.3; transform: scaleX(0.8); }
+.image-toggle-btn.hidden .eye-icon path { stroke-dasharray: 4 2; }
+.bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; will-change: transform; animation: float 15s infinite ease-in-out; }
+.orb-1 { width: 300px; height: 300px; background: var(--orb-1); top: -80px; left: -80px; }
+.orb-2 { width: 250px; height: 250px; background: var(--orb-2); bottom: -50px; right: -50px; animation-delay: -5s; }
+.orb-3 { width: 200px; height: 200px; background: var(--orb-3); top: 60%; left: 60%; animation-delay: -10s; }
+@keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -30px); } }
+.grid-lines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(255, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.03) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; display: none; }
+.container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 20px 20px; }
+header { text-align: center; margin-bottom: 20px; }
+header h1 { color: var(--text-primary); font-size: 32px; text-shadow: 0 0 20px var(--btn-hover-glow); }
+header .subtitle { color: var(--orb-1); font-size: 14px; letter-spacing: 2px; margin-top: 5px; }
+.section-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 25px; }
+.section-btn { padding: 8px 16px; background: var(--btn-bg); color: var(--text-primary); border: 1px solid var(--btn-border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.section-btn:hover, .section-btn.active { background: var(--orb-1); color: var(--bg-primary); border-color: var(--orb-1); }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.news-card { background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 15px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; backdrop-filter: blur(10px); cursor: pointer; }
+.news-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px var(--calc-shadow); }
+.news-card img { width: 100%; height: 200px; object-fit: cover; background: var(--display-bg); }
+.news-content { padding: 15px; }
+.news-category { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 5px; }
+.news-category span { color: var(--bg-primary); background: var(--orb-1); font-size: 9px; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.news-title { color: var(--text-primary); font-size: 16px; font-weight: 700; margin: 8px 0; line-height: 1.4; }
+.news-desc { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.loading, .error { text-align: center; padding: 60px; color: var(--text-primary); font-size: 18px; }
+.error { color: #ff4444; }
+.refresh-btn { display: block; margin: 20px auto; padding: 12px 30px; background: var(--equals-bg); color: var(--equals-text); border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-size: 14px; cursor: pointer; }
+.refresh-btn:hover { box-shadow: 0 0 20px var(--btn-hover-glow); }
+.timer { text-align: center; color: var(--text-secondary); font-size: 12px; margin-top: 10px; }
+.timer.active { color: var(--orb-1); }
+.footer { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 12px; }
+@media (max-width: 600px) {
+.container { padding: 70px 15px; }
+header h1 { font-size: 24px; }
+.news-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="outlet-selector">
+    <div class="outlet-toggle" id="outlet-toggle">
+        <button class="outlet-btn active" data-outlet="bbc">BBC</button>
+        <button class="outlet-btn" data-outlet="scmp">SCMP</button>
+        <button class="outlet-btn" data-outlet="cnn">CNN</button>
+        <button class="outlet-btn" data-outlet="reuters">Reuters</button>
+    </div>
+</div>
+<div class="theme-selector">
+    <div class="theme-container">
+        <button id="theme-btn" class="theme-btn" onclick="toggleThemeMenu()">Theme ▾</button>
+        <div id="theme-menu" class="theme-menu">
+            <button class="theme-option" data-theme="aurora" onclick="setTheme('aurora')">Aurora</button>
+            <button class="theme-option" data-theme="sunset" onclick="setTheme('sunset')">Sunset</button>
+            <button class="theme-option" data-theme="forest" onclick="setTheme('forest')">Forest</button>
+            <button class="theme-option" data-theme="midnight" onclick="setTheme('midnight')">Midnight</button>
+            <button class="theme-option" data-theme="neon" onclick="setTheme('neon')">Neon</button>
+        </div>
+    </div>
+    <button id="image-toggle" class="image-toggle-btn" onclick="toggleImages()">
+    <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  </button>
+</div>
+<div class="bg-animation">
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+</div>
+<div class="grid-lines" id="grid-lines"></div>
+<div class="container">
+<header><h1 id="header-title">BBC NEWS</h1><div class="subtitle">Latest Headlines</div></header>
+<div class="section-nav" id="section-nav">
+    <div class="loading">Loading sections...</div>
+</div>
+<button class="refresh-btn" onclick="loadCurrentSection()">REFRESH</button>
+  <div class="news-grid" id="news-grid"><div class="loading">Loading...</div></div>
+<div class="footer">BBC News • Themeable</div>
+</div>
+<script src="/static/main.js"></script>
+</body>
+</html>
