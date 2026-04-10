@@ -6,15 +6,14 @@ const themes = {
     neon: 'neon.css'
 };
 
-let currentTheme = localStorage.getItem('newsTheme') || 'aurora';
-const linkElement = document.getElementById('theme-stylesheet');
-const gridLines = document.getElementById('grid-lines');
-
+let currentTheme;
+let linkElement;
+let gridLines;
 let autoRefreshTime = 60;
 let timerInterval;
 let currentSection = 'home';
-let currentOutlet = localStorage.getItem('newsOutlet') || 'bbc';
-let showImages = localStorage.getItem('showImages') !== 'false';
+let currentOutlet;
+let showImages;
 let availableSections = [];
 let currentNewsData = [];
 
@@ -43,6 +42,20 @@ function loadCurrentSection() {
     }
 }
 
+function navigateToArticle(url, theme, source) {
+    history.pushState({page: 'article', url: url, theme: theme, source: source}, '', '/article?url=' + url + '&theme=' + theme + '&source=' + source);
+    window.location.href = '/article?url=' + url + '&theme=' + theme + '&source=' + source;
+}
+
+window.addEventListener('popstate', function(e) {
+    const state = e.state || history.state;
+    if (state && state.page === 'article') {
+        window.location.href = '/article?url=' + state.url + '&theme=' + state.theme + '&source=' + state.source;
+    } else if (state && state.page === 'home') {
+        window.location.href = '/?theme=' + state.theme + '&source=' + state.source;
+    }
+});
+
 function renderNewsCards(news) {
     const grid = document.getElementById('news-grid');
     if (!news || !news.length) {
@@ -59,7 +72,8 @@ function renderNewsCards(news) {
             ? `<img src="${item.image}" alt="" style="display:${showImages ? '' : 'none'};width:100%;height:200px;object-fit:cover;background:var(--display-bg)" onerror="this.style.display='none'">`
             : `<div class="img-placeholder" style="display:${showImages ? '' : 'none'};width:100%;height:200px;background:var(--display-bg);display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">Loading...</div>`;
             
-        return `<div class="news-card" data-index="${index}" onclick="window.location.href='/article?url=${encodeURIComponent(item.link)}&theme=${currentTheme}&source=${currentOutlet}'">${imgHtml}<div class="news-content"><div class="news-category">${tagHtml}</div><div class="news-title">${item.title || ''}</div><div class="news-desc">${item.description || ''}</div></div></div>`;
+        const articleUrl = encodeURIComponent(item.link);
+        return `<div class="news-card" data-index="${index}" onclick="navigateToArticle('${articleUrl}', '${currentTheme}', '${currentOutlet}')">${imgHtml}<div class="news-content"><div class="news-category">${tagHtml}</div><div class="news-title">${item.title || ''}</div><div class="news-desc">${item.description || ''}</div></div></div>`;
     }).join('');
 }
 
@@ -185,15 +199,56 @@ document.addEventListener('click', (e) => {
     }
 });
 
-linkElement.href = '/static/' + themes[currentTheme];
-if (gridLines) {
-    gridLines.style.display = currentTheme === 'neon' ? 'block' : 'none';
-}
+document.addEventListener('DOMContentLoaded', () => {
+    currentTheme = localStorage.getItem('newsTheme') || 'aurora';
+    linkElement = document.getElementById('theme-stylesheet');
+    gridLines = document.getElementById('grid-lines');
+    currentOutlet = localStorage.getItem('newsOutlet') || 'bbc';
+    showImages = localStorage.getItem('showImages') !== 'false';
+    const imageToggleBtn = document.getElementById('image-toggle');
 
-const imageToggleBtn = document.getElementById('image-toggle');
-if (!showImages) {
-    imageToggleBtn.classList.add('hidden');
-}
+    if (linkElement) {
+        linkElement.href = '/static/' + themes[currentTheme];
+    }
+    if (gridLines) {
+        gridLines.style.display = currentTheme === 'neon' ? 'block' : 'none';
+    }
+    if (imageToggleBtn && !showImages) {
+        imageToggleBtn.classList.add('hidden');
+    }
+
+    // Push initial state for back button support
+    if (!history.state || history.state.page !== 'home') {
+        history.replaceState({page: 'home', source: currentOutlet, theme: currentTheme}, '', '/');
+    }
+
+    initOutletSlider();
+
+    setTimeout(() => {
+        const outletNames = {
+            bbc: 'BBC NEWS',
+            scmp: 'SCMP NEWS'
+        };
+        const headerTitle = document.getElementById('header-title');
+        document.querySelectorAll('.outlet-btn').forEach(btn => {
+            if (btn.dataset.outlet === currentOutlet) {
+                btn.classList.add('active');
+                if (headerTitle) {
+                    headerTitle.textContent = outletNames[currentOutlet] || 'NEWS';
+                }
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        if (window.updateOutletSliderPosition) {
+            window.updateOutletSliderPosition();
+        }
+    }, 50);
+
+    loadSections();
+    timerInterval = setInterval(updateTimer, 1000);
+});
 
 function initOutletSlider() {
     const toggleContainer = document.querySelector('.outlet-toggle');
@@ -299,6 +354,3 @@ setTimeout(() => {
         window.updateOutletSliderPosition();
     }
 }, 50);
-
-loadSections();
-timerInterval = setInterval(updateTimer, 1000);
