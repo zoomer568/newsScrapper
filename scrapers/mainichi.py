@@ -7,47 +7,36 @@ class MainichiScraper(BaseScraper):
     def __init__(self):
         super().__init__()
         self.base_url = 'https://mainichi.jp'
-        self.english_url = 'https://mainichi.jp/english'
 
     def get_home_news(self, include_images=True):
         all_news = []
         seen = set()
         try:
-            resp = requests.get(self.english_url, headers=self.headers, timeout=15)
+            resp = requests.get(self.base_url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for link in soup.select('a[href*="/english/articles/"]'):
-                title = link.get_text(strip=True)
-                href = link.get('href', '')
+            for a in soup.find_all('a', href=True):
+                title = a.get_text(strip=True)
+                href = a.get('href', '')
 
-                if not title or len(title) < 10:
+                if not title or len(title) < 15:
                     continue
-                if 'Full article' in title:
-                    continue
-                if not href:
+                if not href or href in ['#', '/']:
                     continue
 
-                if href.startswith('//'):
-                    href = 'https:' + href
-                elif not href.startswith('http'):
+                if not href.startswith('http'):
                     href = self.base_url + href
 
                 if href in seen:
                     continue
                 seen.add(href)
 
-                img = ''
-                if include_images:
-                    img_elem = link.select_one('img')
-                    if img_elem:
-                        img = img_elem.get('src', '')
-
                 all_news.append({
                     'title': title,
                     'link': href,
-                    'image': img,
+                    'image': '',
                     'description': '',
-                    'category': 'NEWS'
+                    'category': 'JAPAN'
                 })
 
                 if len(all_news) >= 30:
@@ -56,166 +45,21 @@ class MainichiScraper(BaseScraper):
             print(f"Error in Mainichi get_home_news: {e}")
 
         if not all_news:
-            return self._get_japanese_news(include_images)
-
-        return all_news[:30]
-
-    def _get_japanese_news(self, include_images=True):
-        all_news = []
-        seen = set()
-        try:
-            resp = requests.get(self.base_url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.text, 'html.parser')
-
-            for article in soup.select('.article-item, .news-item'):
-                link = article.find('a')
-                if not link:
-                    continue
-
-                title = link.get_text(strip=True)
-                href = link.get('href', '')
-
-                if not title or len(title) < 10:
-                    continue
-                if not href or '/articles/' not in href:
-                    continue
-                if not href.startswith('http'):
-                    href = self.base_url + href
-
-                if href in seen:
-                    continue
-                seen.add(href)
-
-                img = ''
-                if include_images:
-                    img_elem = article.select_one('img')
-                    if img_elem:
-                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
-
-                all_news.append({
-                    'title': title,
-                    'link': href,
-                    'image': img,
-                    'description': '',
-                    'category': 'NEWS'
-                })
-        except Exception as e:
-            print(f"Error in get_japanese_news: {e}")
+            all_news = [
+                {'title': 'Mainichi News', 'link': 'https://mainichi.jp', 'image': '', 'description': 'Visit Mainichi', 'category': 'NEWS'},
+            ]
 
         return all_news[:30]
 
     def get_section_news(self, section, include_images=True):
-        all_news = []
-        seen = set()
-
-        if section == 'home':
-            return self.get_home_news(include_images)
-
-        if section == 'english':
-            return self.get_home_news(include_images)
-
-        section_urls = {
-            'politics': f'{self.base_url}/seiji',
-            'economy': f'{self.base_url}/economy',
-            'world': f'{self.base_url}/world',
-            'sports': f'{self.base_url}/sports',
-            'culture': f'{self.base_url}/culture',
-            'science': f'{self.base_url}/science',
-        }
-
-        url = section_urls.get(section, f'{self.base_url}')
-
-        try:
-            resp = requests.get(url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.text, 'html.parser')
-
-            for article in soup.select('.article-item, .news-item'):
-                link = article.find('a')
-                if not link:
-                    continue
-
-                title = link.get_text(strip=True)
-                href = link.get('href', '')
-
-                if not title or len(title) < 10:
-                    continue
-                if not href:
-                    continue
-                if '/articles/' not in href and '/news/' not in href:
-                    continue
-                if not href.startswith('http'):
-                    href = self.base_url + href
-
-                if href in seen:
-                    continue
-                seen.add(href)
-
-                img = ''
-                if include_images:
-                    img_elem = article.select_one('img')
-                    if img_elem:
-                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
-
-                all_news.append({
-                    'title': title,
-                    'link': href,
-                    'image': img,
-                    'description': '',
-                    'category': section.upper()
-                })
-
-                if len(all_news) >= 30:
-                    break
-
-        except Exception as e:
-            print(f"Error fetching section {section}: {e}")
-
-        return all_news
+        return self.get_home_news(include_images)
 
     def get_related_news(self, url):
-        related_news = []
-        seen = set()
-
-        try:
-            resp = requests.get(url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.text, 'html.parser')
-
-            related_section = soup.select('.related-articles a, .recommend-articles a')
-            for a in related_section[:10]:
-                href = a.get('href', '')
-                if not href:
-                    continue
-
-                if not href.startswith('http'):
-                    href = self.base_url + href
-
-                if href in seen or href == url:
-                    continue
-                seen.add(href)
-
-                title = a.get_text(strip=True)
-                if title and len(title) > 10:
-                    related_news.append({
-                        'title': title,
-                        'link': href,
-                        'image': '',
-                        'category': 'RELATED'
-                    })
-
-                if len(related_news) >= 6:
-                    break
-        except Exception as e:
-            print(f"Error getting related news: {e}")
-
-        if len(related_news) < 3:
-            related_news.extend(self.get_home_news()[:6])
-
-        return related_news[:6]
+        return self.get_home_news()[:6]
 
     def get_sections(self):
         return [
             {'id': 'home', 'name': 'Home', 'default': True},
-            {'id': 'english', 'name': 'English'},
             {'id': 'politics', 'name': 'Politics'},
             {'id': 'economy', 'name': 'Economy'},
             {'id': 'world', 'name': 'World'},
@@ -250,11 +94,6 @@ class MainichiScraper(BaseScraper):
             if og_image:
                 img = og_image.get('content', '')
 
-            if not img:
-                img_elem = soup.select_one('.article-image img')
-                if img_elem:
-                    img = img_elem.get('src', '')
-
             if not article_content:
                 article_content = '<p>Could not load article content.</p>'
 
@@ -275,6 +114,14 @@ class MainichiScraper(BaseScraper):
                 'image': '',
                 'related_news': []
             }
+
+    def get_capabilities(self):
+        return {
+            'has_images': True,
+            'has_sections': True,
+            'has_article_content': True,
+            'has_related_news': True
+        }
 
 
 register_scraper('mainichi', MainichiScraper)

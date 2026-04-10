@@ -117,5 +117,13 @@ class MyAnimeListScraper(BaseScraper):
     def get_article(self, url):
         return {'title': 'Article', 'content': '<p>Content</p>', 'image': '', 'related_news': []}
 
+    def get_capabilities(self):
+        return {
+            'has_images': False,
+            'has_sections': False,
+            'has_article_content': False,
+            'has_related_news': False
+        }
+
 
 register_scraper('myanimelist', MyAnimeListScraper)

@@ -85,6 +85,25 @@ def api_scrapers():
     return jsonify(list(SCRAPERS.keys()))
 
 
+@app.route('/api/capabilities')
+def api_capabilities():
+    """Return capabilities for a specific scraper or all scrapers"""
+    source = request.args.get('source')
+    if source:
+        scraper = SCRAPERS.get(source)
+        if not scraper:
+            return jsonify({'error': 'Scraper not found'}), 404
+        return jsonify(scraper.get_capabilities())
+    
+    caps = {}
+    for name, scraper in SCRAPERS.items():
+        try:
+            caps[name] = scraper.get_capabilities()
+        except Exception as e:
+            caps[name] = {'error': str(e)}
+    return jsonify(caps)
+
+
 @app.route('/api/sections')
 def api_sections():
     source = request.args.get('source', 'bbc')
@@ -101,7 +120,7 @@ def get_scraper():
 
 
 @app.route('/')
-@app.route('/article')
+@app.route('/index.html')
 def spa_route():
     return render_template('index.html')
 

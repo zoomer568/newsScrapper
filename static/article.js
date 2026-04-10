@@ -6,6 +6,16 @@ const themes = {
     neon: 'neon.css'
 };
 
+function getUrlPath(url) {
+    try {
+        const parser = document.createElement('a');
+        parser.href = url;
+        return parser.pathname;
+    } catch (e) {
+        return '';
+    }
+}
+
 window.addEventListener('popstate', function(e) {
     const state = e.state || history.state;
     if (state && state.page === 'home') {
@@ -358,13 +368,20 @@ function fetchRelatedImages() {
 function updateRelatedCard(imgData) {
     if (!imgData.image || !imgData.url) return;
     
+    const imgPath = getUrlPath(imgData.url);
     const cards = document.querySelectorAll('.related-card');
     cards.forEach((card, index) => {
         const onclick = card.getAttribute('onclick');
-        if (onclick && onclick.includes(encodeURIComponent(imgData.url))) {
-            const placeholder = card.querySelector('.related-placeholder');
-            if (placeholder) {
-                placeholder.outerHTML = `<img src="${imgData.image}" alt="" style="width:100%;height:120px;object-fit:cover;background:var(--display-bg);display:${showImages ? '' : 'none'}" onerror="this.style.display='none'">`;
+        if (onclick) {
+            const urlMatch = onclick.match(/url=([^&']+)/);
+            if (urlMatch) {
+                const cardPath = getUrlPath(decodeURIComponent(urlMatch[1]));
+                if (cardPath === imgPath) {
+                    const placeholder = card.querySelector('.related-placeholder');
+                    if (placeholder) {
+                        placeholder.outerHTML = '<img src="' + imgData.image + '" alt="" style="width:100%;height:120px;object-fit:cover;background:var(--display-bg);display:' + (showImages ? '' : 'none') + '" onerror="this.style.display=\'none\'">';
+                    }
+                }
             }
         }
     });

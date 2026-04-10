@@ -458,5 +458,13 @@ class BBCScraper(BaseScraper):
             pass
         return ''
 
+    def get_capabilities(self):
+        return {
+            'has_images': True,
+            'has_sections': True,
+            'has_article_content': True,
+            'has_related_news': True
+        }
+
 
 register_scraper('bbc', BBCScraper)

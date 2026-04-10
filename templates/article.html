@@ -7,96 +7,53 @@
 <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link id="theme-stylesheet" rel="stylesheet" href="/static/{{ theme }}.css">
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -webkit-overflow-scrolling: touch; }
-html, body { height: 100%; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; }
-body { background: var(--bg-primary); position: relative; }
-.theme-selector { position: fixed; top: 15px; right: 15px; z-index: 100; display: flex; gap: 8px; align-items: flex-start; background: var(--calc-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--calc-border); }
-.theme-container { position: relative; }
-.theme-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; height: 36px; box-sizing: border-box; display: flex; align-items: center; }
-.theme-btn:hover { background: var(--operator-bg); }
-.theme-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 8px; overflow: hidden; z-index: 101; }
-.theme-menu.open { display: block; }
-.theme-option { display: block; width: 100%; padding: 10px 16px; background: transparent; border: none; color: var(--text-primary); font-size: 12px; cursor: pointer; text-align: left; font-family: 'Orbitron', sans-serif; }
-.theme-option:hover { background: var(--operator-bg); }
-.theme-option.active { background: var(--orb-1); color: var(--bg-primary); }
-.image-toggle-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
-.image-toggle-btn:hover { background: var(--operator-bg); }
-.eye-icon { width: 18px; height: 18px; }
-.tts-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); padding: 8px; border-radius: 8px; cursor: pointer; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
-.tts-btn:hover { background: var(--operator-bg); }
-.tts-btn.playing { background: var(--orb-1); color: var(--bg-primary); animation: glow 1.5s infinite; }
-.tts-btn.loading { background: var(--btn-bg); animation: spin 1s linear infinite; }
-.tts-icon { width: 20px; height: 20px; }
-@keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--orb-1); } 50% { box-shadow: 0 0 20px var(--orb-1); } }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.timer { position: absolute; top: 100%; right: 0; margin-top: 8px; font-size: 11px; color: var(--text-secondary); font-family: 'Orbitron', sans-serif; white-space: nowrap; }
-.bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none; }
-.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; will-change: transform; animation: float 15s infinite ease-in-out; }
-.orb-1 { width: 300px; height: 300px; background: var(--orb-1); top: -80px; left: -80px; }
-.orb-2 { width: 250px; height: 250px; background: var(--orb-2); bottom: -50px; right: -50px; animation-delay: -5s; }
-.orb-3 { width: 200px; height: 200px; background: var(--orb-3); top: 60%; left: 60%; animation-delay: -10s; }
-@keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -30px); } }
-.container { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 100px 20px 40px; }
-.back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: var(--btn-bg); color: var(--text-primary); border: 1px solid var(--btn-border); border-radius: 8px; text-decoration: none; font-size: 14px; }
-.back-btn:hover { background: var(--operator-bg); }
-.article-card { background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 20px; padding: 30px; }
-.article-card img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; }
-.article-title { color: var(--text-primary); font-size: 28px; font-weight: 700; margin-bottom: 20px; line-height: 1.3; }
-.article-content { color: var(--text-secondary); line-height: 1.8; font-family: 'Roboto', sans-serif; font-size: 16px; }
-.article-content p { margin-bottom: 15px; }
-.article-content h3 { color: var(--text-primary); font-size: 20px; margin: 25px 0 15px; font-family: 'Orbitron', sans-serif; }
-.source-link { display: block; margin-top: 30px; padding: 15px; background: var(--display-bg); border-radius: 10px; text-align: center; }
-.source-link a { color: var(--orb-1); text-decoration: none; }
-.related-title { color: var(--text-primary); font-size: 20px; margin: 30px 0 20px; text-align: center; }
-.related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-.related-card { background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
-.related-card:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
-.related-card img { width: 100%; height: 120px; object-fit: cover; background: var(--display-bg); }
-.related-placeholder { width: 100%; height: 120px; background: var(--display-bg); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; }
-.related-content { padding: 12px; display: flex; align-items: center; gap: 8px; }
-.related-title-text { color: var(--text-primary); font-size: 14px; line-height: 1.4; flex: 1; }
-.queue-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-primary); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.queue-btn:hover { background: var(--orb-1); color: var(--bg-primary); }
-.tts-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--btn-bg); border: 1px solid var(--btn-border); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; margin-bottom: 15px; }
-.tts-btn:hover { background: var(--operator-bg); }
-.tts-btn.playing { background: var(--orb-1); color: var(--bg-primary); }
-.tts-icon { width: 20px; height: 20px; }
-.tts-btn.playing .tts-icon { animation: pulse 1s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-</style>
+<link rel="stylesheet" href="/static/index.css">
+<link rel="stylesheet" href="/static/article.css">
 </head>
 <body data-original-url="{{ original_url }}">
+<div id="app">
 <div class="theme-selector">
-    <button id="tts-btn" class="tts-btn" onclick="toggleTTS()" title="Text to Speech">
-        <svg class="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-        </svg>
-    </button>
-    <div class="theme-container">
-        <button id="theme-btn" class="theme-btn" onclick="toggleThemeMenu()">Theme ▾</button>
-        <div id="theme-menu" class="theme-menu">
-            <button class="theme-option {{ 'active' if theme=='aurora' else '' }}" data-theme="aurora" onclick="setTheme('aurora')">Aurora</button>
-            <button class="theme-option {{ 'active' if theme=='sunset' else '' }}" data-theme="sunset" onclick="setTheme('sunset')">Sunset</button>
-            <button class="theme-option {{ 'active' if theme=='forest' else '' }}" data-theme="forest" onclick="setTheme('forest')">Forest</button>
-            <button class="theme-option {{ 'active' if theme=='midnight' else '' }}" data-theme="midnight" onclick="setTheme('midnight')">Midnight</button>
-            <button class="theme-option {{ 'active' if theme=='neon' else '' }}" data-theme="neon" onclick="setTheme('neon')">Neon</button>
-        </div>
-    </div>
-    <button id="image-toggle" class="image-toggle-btn" onclick="toggleImages()">
-        <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-    </button>
-    <div id="timer" class="timer"></div>
+<div class="tts-container">
+<button id="tts-btn" class="tts-btn" onclick="NewsApp.playOrPauseTTS()" title="Text to Speech">
+<svg class="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+</svg>
+</button>
+<div id="tts-menu" class="tts-menu" onclick="event.stopPropagation()">
+<div class="tts-progress-container">
+<div class="tts-progress-label">
+<span id="tts-current-title">Not playing</span>
+<span id="tts-time">0:00 / 0:00</span>
+</div>
+<input type="range" class="tts-progress-bar" id="tts-progress" min="0" max="100" value="0">
+</div>
+<div class="tts-menu-header">Queue • Click item to play</div>
+<div class="tts-queue-list" id="tts-queue-list"></div>
+</div>
+</div>
+<div class="theme-container">
+<button id="theme-btn" class="theme-btn" onclick="NewsApp.toggleThemeMenu()">Theme ▾</button>
+<div id="theme-menu" class="theme-menu">
+<button class="theme-option {{ 'active' if theme=='aurora' else '' }}" data-theme="aurora" onclick="NewsApp.setTheme('aurora')">Aurora</button>
+<button class="theme-option {{ 'active' if theme=='sunset' else '' }}" data-theme="sunset" onclick="NewsApp.setTheme('sunset')">Sunset</button>
+<button class="theme-option {{ 'active' if theme=='forest' else '' }}" data-theme="forest" onclick="NewsApp.setTheme('forest')">Forest</button>
+<button class="theme-option {{ 'active' if theme=='midnight' else '' }}" data-theme="midnight" onclick="NewsApp.setTheme('midnight')">Midnight</button>
+<button class="theme-option {{ 'active' if theme=='neon' else '' }}" data-theme="neon" onclick="NewsApp.setTheme('neon')">Neon</button>
+</div>
+</div>
+<button id="image-toggle" class="image-toggle-btn" onclick="NewsApp.toggleImages()">
+<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+</svg>
+</button>
+<div id="timer" class="timer"></div>
 </div>
 <div class="bg-animation">
 <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
 </div>
-<div class="container">
-<a href="javascript:void(0)" class="back-btn" onclick="goBack()">← Back to News</a>
+<div class="grid-lines" id="grid-lines"></div>
+<div class="container" id="main-container">
+<a href="javascript:void(0)" class="back-btn" onclick="NewsApp.showHome()">← Back to News</a>
 <div class="article-card">
 {% if image %}<img src="{{ image }}" alt="">{% endif %}
 <h1 class="article-title">{{ title }}</h1>
@@ -109,12 +66,146 @@ body { background: var(--bg-primary); position: relative; }
 {% if item.image %}<img src="{{ item.image }}" alt="">{% else %}<div class="related-placeholder">Loading...</div>{% endif %}
 <div class="related-content">
 <div class="related-title-text">{{ item.title }}</div>
-<button class="queue-btn" onclick="event.stopPropagation(); addToQueueFromCard('{{ item.link }}', '{{ source }}')">+</button>
+<button class="queue-btn" onclick="event.stopPropagation(); NewsApp.addToQueue('{{ item.link }}', '{{ source }}', '{{ item.title }}')">+</button>
 </div>
 </div>
 {% endfor %}
 </div>
 </div>
-<script src="/static/article.js"></script>
+<script>
+(function() {
+    'use strict';
+    
+    window.originalUrl = '{{ original_url }}';
+    window.currentSource = '{{ source }}';
+    
+    const showImages = localStorage.getItem('showImages') !== 'false';
+    
+    if (!showImages) {
+        document.querySelectorAll('img').forEach(img => img.style.display = 'none');
+    }
+    
+    const imageToggle = document.getElementById('image-toggle');
+    if (imageToggle) {
+        imageToggle.classList.toggle('hidden', !showImages);
+    }
+    
+    const theme = '{{ theme }}';
+    const themeStylesheet = document.getElementById('theme-stylesheet');
+    if (themeStylesheet) {
+        themeStylesheet.href = '/static/' + theme + '.css';
+    }
+    
+    const gridLines = document.getElementById('grid-lines');
+    if (gridLines) {
+        gridLines.style.display = theme === 'neon' ? 'block' : 'none';
+    }
+    
+    const params = new URLSearchParams(window.location.search);
+    const articleUrl = params.get('url') || '{{ original_url }}';
+    const articleSource = params.get('source') || '{{ source }}';
+    
+    if (!showImages) {
+        document.querySelectorAll('img').forEach(img => img.style.display = 'none');
+    }
+    
+    const timerEl = document.getElementById('timer');
+    if (timerEl) {
+        timerEl.textContent = 'Tap + to queue';
+    }
+    
+    function getUrlPath(url) {
+        try {
+            const parser = document.createElement('a');
+            parser.href = url;
+            return parser.pathname;
+        } catch (e) {
+            return '';
+        }
+    }
+    
+    function fetchRelatedImages() {
+        const cards = document.querySelectorAll('.related-card');
+        if (!cards.length) return;
+        
+        const urls = Array.from(cards).map(card => {
+            const onclick = card.getAttribute('onclick');
+            if (onclick) {
+                const match = onclick.match(/url=([^&']+)/);
+                if (match) return decodeURIComponent(match[1]);
+            }
+            return null;
+        }).filter(Boolean);
+        
+        if (!urls.length) return;
+        
+        fetch('/api/images?source=' + articleSource + '&' + urls.map(u => 'urls=' + encodeURIComponent(u)).join('&'))
+        .then(res => {
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            
+            function processChunk() {
+                return reader.read().then(({done, value}) => {
+                    if (done) {
+                        if (buffer.trim()) {
+                            try {
+                                const imgData = JSON.parse(buffer.trim());
+                                updateRelatedCard(imgData);
+                            } catch (e) {}
+                        }
+                        return;
+                    }
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            try {
+                                const imgData = JSON.parse(line.trim());
+                                updateRelatedCard(imgData);
+                            } catch (e) {}
+                        }
+                    });
+                    
+                    return processChunk();
+                });
+            }
+            
+            return processChunk();
+        })
+        .catch(err => console.error('Error fetching related images:', err));
+    }
+    
+    function updateRelatedCard(imgData) {
+        if (!imgData.image || !imgData.url) return;
+        
+        const imgPath = getUrlPath(imgData.url);
+        const cards = document.querySelectorAll('.related-card');
+        
+        cards.forEach(card => {
+            const onclick = card.getAttribute('onclick');
+            if (onclick) {
+                const urlMatch = onclick.match(/url=([^&']+)/);
+                if (urlMatch) {
+                    const cardPath = getUrlPath(decodeURIComponent(urlMatch[1]));
+                    if (cardPath === imgPath) {
+                        const placeholder = card.querySelector('.related-placeholder');
+                        if (placeholder) {
+                            placeholder.outerHTML = '<img src="' + imgData.image + '" alt="" style="width:100%;height:120px;object-fit:cover;background:var(--display-bg);display:' + (showImages ? '' : 'none') + '" onerror="this.style.display=\'none\'">';
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    fetchRelatedImages();
+    
+})();
+</script>
+<script src="/static/main.js"></script>
 </body>
 </html>

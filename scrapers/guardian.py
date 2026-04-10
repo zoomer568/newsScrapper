@@ -74,5 +74,13 @@ class GuardianScraper(BaseScraper):
             'related_news': []
         }
 
+    def get_capabilities(self):
+        return {
+            'has_images': False,
+            'has_sections': False,
+            'has_article_content': False,
+            'has_related_news': False
+        }
+
 
 register_scraper('guardian', GuardianScraper)

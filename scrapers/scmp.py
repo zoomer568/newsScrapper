@@ -13,6 +13,35 @@ class SCMPScraper(BaseScraper):
             'Accept-Language': 'en-US,en;q=0.5',
         }
 
+    def _extract_image(self, element, base_url=None):
+        """Extract image URL from any element"""
+        if not element:
+            return ''
+        
+        url = base_url or self.base_url
+        
+        picture = element.select_one('picture')
+        if picture:
+            source = picture.find('source')
+            if source:
+                srcset = source.get('srcset', '')
+                if srcset:
+                    img = srcset.split(',')[0].strip().split(' ')[0]
+                    if img:
+                        return img
+        
+        img_elem = element.select_one('img')
+        if img_elem:
+            for attr in ['data-lazy-src', 'data-src', 'data-original', 'data-image', 'src']:
+                img = img_elem.get(attr, '')
+                if img and not img.startswith('data:'):
+                    if not img.startswith('http'):
+                        img = url + img
+                    if img and 'cdn.i-scmp.com' in img:
+                        return img
+        
+        return ''
+
     def get_home_news(self, include_images=True):
         all_news = []
         seen = set()
@@ -21,6 +50,24 @@ class SCMPScraper(BaseScraper):
             resp = requests.get(f'{self.base_url}/news', headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
+            # Build a map of href -> image from all picture elements in the page
+            # Use path (without query params) as key since article links may have params
+            href_to_img = {}
+            if include_images:
+                pictures = soup.find_all('picture')
+                for pic in pictures:
+                    parent_a = pic.find_parent('a')
+                    if parent_a:
+                        href = parent_a.get('href', '')
+                        if href and '/article/' in href:
+                            source = pic.find('source')
+                            if source:
+                                srcset = source.get('srcset', '')
+                                if srcset:
+                                    from urllib.parse import urlparse
+                                    path = urlparse(href).path
+                                    href_to_img[path] = srcset.split(',')[0].strip().split(' ')[0]
+            
             all_links = soup.find_all('a', href=True)
             links = [a for a in all_links if '/article/' in a.get('href', '')]
 
@@ -39,21 +86,14 @@ class SCMPScraper(BaseScraper):
                     continue
 
                 full_url = self.base_url + href if href.startswith('/') else href
-                parent = a.find_parent(['div', 'li', 'article'])
-
-                img = ''
-                if include_images and parent:
-                    img_elem = parent.select_one('img')
-                    if img_elem:
-                        img = img_elem.get('src', '') or img_elem.get('data-src', '')
-                    if not img and parent.parent:
-                        parent2 = parent.parent.find_parent('div') if parent.parent else None
-                        if parent2:
-                            img_elem = parent2.select_one('img')
-                            if img_elem:
-                                img = img_elem.get('src', '') or img_elem.get('data-src', '')
+                
+                # Look up image from pre-built map (using path without query params)
+                from urllib.parse import urlparse
+                path = urlparse(href).path
+                img = href_to_img.get(path, '')
 
                 desc = ''
+                parent = a.find_parent(['div', 'li', 'article'])
                 if parent:
                     for p in parent.find_all('p')[:2]:
                         text = p.get_text(strip=True)
@@ -113,6 +153,24 @@ class SCMPScraper(BaseScraper):
             resp = requests.get(url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
+            # Build a map of href -> image from all picture elements in the page
+            # Use path (without query params) as key since article links may have params
+            href_to_img = {}
+            if include_images:
+                pictures = soup.find_all('picture')
+                for pic in pictures:
+                    parent_a = pic.find_parent('a')
+                    if parent_a:
+                        href = parent_a.get('href', '')
+                        if href and '/article/' in href:
+                            source = pic.find('source')
+                            if source:
+                                srcset = source.get('srcset', '')
+                                if srcset:
+                                    from urllib.parse import urlparse
+                                    path = urlparse(href).path
+                                    href_to_img[path] = srcset.split(',')[0].strip().split(' ')[0]
+
             all_links = soup.find_all('a', href=True)
             links = [a for a in all_links if '/article/' in a.get('href', '')]
 
@@ -131,11 +189,16 @@ class SCMPScraper(BaseScraper):
                     continue
 
                 full_url = self.base_url + href
+                
+                # Look up image from pre-built map (using path without query params)
+                from urllib.parse import urlparse
+                path = urlparse(href).path
+                img = href_to_img.get(path, '')
 
                 all_news.append({
                     'title': title,
                     'link': full_url,
-                    'image': '',
+                    'image': img,
                     'description': '',
                     'category': section.upper().replace('_', ' ')
                 })
@@ -269,11 +332,30 @@ class SCMPScraper(BaseScraper):
                             article_content += f'<p>{text}</p>'
 
             img = ''
-            for img_elem in soup.find_all('img'):
-                src = img_elem.get('src') or ''
-                if src and 'cdn.i-scmp.com' in src:
-                    img = src
-                    break
+            picture = soup.find('picture')
+            if picture:
+                source = picture.find('source')
+                if source:
+                    srcset = source.get('srcset', '')
+                    if srcset:
+                        img = srcset.split(',')[0].strip().split(' ')[0]
+                        if img and not img.startswith('http'):
+                            img = f'{parsed.scheme}://{parsed.netloc}{img}'
+            
+            if not img:
+                for img_elem in soup.find_all('img'):
+                    src = img_elem.get('src') or img_elem.get('data-src') or img_elem.get('data-lazy-src') or ''
+                    if src and 'cdn.i-scmp.com' in src:
+                        if not src.startswith('http'):
+                            src = f'{parsed.scheme}://{parsed.netloc}{src}'
+                        if src:
+                            img = src
+                            break
+            
+            if not img:
+                og_image = soup.find('meta', property='og:image')
+                if og_image:
+                    img = og_image.get('content', '')
 
             if not article_content:
                 article_content = '<p>Could not load article content.</p>'
@@ -301,8 +383,6 @@ class SCMPScraper(BaseScraper):
             from urllib.parse import urlparse
             parsed = urlparse(url)
             path = parsed.path
-            if not path.endswith('/'):
-                path = path + '/'
             clean_url = f'{parsed.scheme}://{parsed.netloc}{path}'
 
             resp = requests.get(clean_url, headers=self.headers, timeout=10)
@@ -314,12 +394,22 @@ class SCMPScraper(BaseScraper):
                 if source:
                     srcset = source.get('srcset', '')
                     if srcset:
-                        return srcset.split(',')[0].strip().split(' ')[0]
+                        img = srcset.split(',')[0].strip().split(' ')[0]
+                        if img and not img.startswith('http'):
+                            img = f'{parsed.scheme}://{parsed.netloc}{img}'
+                        return img
 
             for img_elem in soup.find_all('img'):
-                src = img_elem.get('src') or ''
-                if src and 'cdn.i-scmp.com' in src and 'canvas' not in src:
-                    return src
+                src = img_elem.get('src') or img_elem.get('data-src') or img_elem.get('data-lazy-src') or ''
+                if src and 'cdn.i-scmp.com' in src:
+                    if not src.startswith('http'):
+                        src = f'{parsed.scheme}://{parsed.netloc}{src}'
+                    if src:
+                        return src
+                    
+            meta_og = soup.find('meta', property='og:image')
+            if meta_og:
+                return meta_og.get('content', '')
         except:
             pass
         return ''
@@ -334,8 +424,16 @@ class SCMPScraper(BaseScraper):
             {'id': 'tech', 'name': 'Tech'},
             {'id': 'sport', 'name': 'Sport'},
             {'id': 'lifestyle', 'name': 'Lifestyle'},
-            {'id': 'politics', 'name': 'Politics'},
-        ]
+{'id': 'politics', 'name': 'Politics'},
+    ]
+
+    def get_capabilities(self):
+        return {
+            'has_images': True,
+            'has_sections': True,
+            'has_article_content': True,
+            'has_related_news': True
+        }
 
 
 register_scraper('scmp', SCMPScraper)
