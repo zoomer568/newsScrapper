@@ -2,3 +2,5 @@ flask
 beautifulsoup4
 requests
 piper-tts
+transformers
+torch
