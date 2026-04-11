@@ -7,6 +7,14 @@ import sys
 import wave
 from io import BytesIO
 
+SUMMARIZER_AVAILABLE = False
+try:
+    from summarizer import summarize as generate_summary
+    SUMMARIZER_AVAILABLE = True
+    print("Summarizer loaded successfully")
+except Exception as e:
+    print(f"Summarizer not available: {e}")
+
 app = Flask(__name__)
 
 # Dynamically load all scrapers from the scrapers folder
@@ -213,6 +221,17 @@ def api_article():
         return jsonify({'error': 'Scraper not available'}), 404
     
     article_data = scraper.get_article(url)
+    
+    if SUMMARIZER_AVAILABLE:
+        try:
+            title = article_data.get('title', '')
+            content = article_data.get('content', '')
+            text = title + '. ' + content[:2000] if title and content else content[:2000]
+            if text:
+                article_data['ai_summary'] = generate_summary(text)
+        except Exception as e:
+            print(f"Summary error: {e}")
+    
     return jsonify(article_data)
 
 
@@ -264,6 +283,22 @@ def api_tts():
         wav_io.seek(0)
 
         return send_file(wav_io, mimetype='audio/wav', as_attachment=False)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/summarize')
+def api_summarize():
+    if not SUMMARIZER_AVAILABLE:
+        return jsonify({'error': 'Summarizer not available'}), 503
+    
+    text = request.args.get('text', '')
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+    
+    try:
+        summary = generate_summary(text[:2000])
+        return jsonify({'summary': summary})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

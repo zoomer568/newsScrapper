@@ -370,13 +370,52 @@
                 <div class="article-card">
                     ${data.image ? `<img src="${this.escapeHtml(data.image)}" alt="">` : ''}
                     <h1 class="article-title">${this.escapeHtml(data.title || '')}</h1>
+                    <div class="summary-box"></div>
                     <div class="article-content">${data.content || ''}</div>
                 </div>
                 ${relatedHtml ? `<h2 class="related-title">Related News</h2><div class="related-grid">${relatedHtml}</div>` : ''}`;
+            
+            // Generate summary after a delay
+            var self = this;
+            setTimeout(function() { self.generateSummary(); }, 500);
 
             if (!this.state.showImages) {
                 this.elements.mainContainer.querySelectorAll('img').forEach(img => img.style.display = 'none');
             }
+        },
+        
+        generateSummary: function() {
+            var self = this;
+            var summaryBox = this.elements.mainContainer?.querySelector('.summary-box');
+            var content = this.elements.mainContainer?.querySelector('.article-content');
+            
+            if (!summaryBox) {
+                console.log('Summary box not found');
+                return;
+            }
+            
+            if (!content) {
+                summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;">AI Summary</div><div style="font-size:14px;color:#ff4444;">Error: no content found</div>';
+                return;
+            }
+            
+            var text = content.textContent || '';
+            if (!text) return;
+            
+            summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;">AI Summary</div><div style="font-size:14px;color:var(--text-secondary);">Loading...</div>';
+            
+            fetch('/api/summarize?text=' + encodeURIComponent(text.slice(0, 2000)))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.summary) {
+                        summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;">AI Summary</div><div style="font-size:14px;color:var(--text-primary);line-height:1.5;">' + data.summary + '</div>';
+                    } else {
+                        summaryBox.innerHTML = '';
+                    }
+                })
+                .catch(function(err) {
+                    summaryBox.innerHTML = '';
+                });
         },
 
         changeOutlet: function(outlet) {

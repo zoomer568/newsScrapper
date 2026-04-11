@@ -131,8 +131,32 @@ function renderArticlePage(data, url) {
     container.innerHTML = '<a class="back-btn" onclick="renderHomePage()">← Back to News</a>' +
         '<div class="article-card">' + (data.image ? '<img src="' + data.image + '">' : '') +
         '<h1 class="article-title">' + (data.title || '') + '</h1>' +
+        '<div class="summary-box"></div>' +
         '<div class="article-content">' + (data.content || '') + '</div></div>' +
         (relatedHtml ? '<h2 class="related-title">Related News</h2><div class="news-grid">' + relatedHtml + '</div>' : '');
+    
+    // Auto generate summary
+    var summaryBox = document.querySelector('.summary-box');
+    var content = document.querySelector('.article-content');
+    console.log('Summary box:', summaryBox);
+    console.log('Content:', content ? content.textContent.slice(0, 30) : 'NOT FOUND');
+    
+    if (summaryBox && content && content.textContent) {
+        summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;">AI Summary</div><div style="font-size:14px;color:var(--text-secondary);">Loading...</div>';
+        
+        fetch('/api/summarize?text=' + encodeURIComponent(content.textContent.slice(0, 2000)))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.summary) {
+                    summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;">AI Summary</div><div style="font-size:14px;color:var(--text-primary);line-height:1.5;">' + data.summary + '</div>';
+                } else {
+                    summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;">AI Summary</div><div style="font-size:14px;color:var(--text-secondary);">No summary available</div>';
+                }
+            })
+            .catch(function(err) { 
+                summaryBox.innerHTML = '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;">AI Summary</div><div style="font-size:14px;color:var(--text-secondary);">Error generating summary</div>';
+            });
+    }
 }
 
 function showHomeInline() {

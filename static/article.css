@@ -19,6 +19,14 @@ body { background: var(--bg-primary); position: relative; }
 .tts-btn.loading { background: var(--btn-bg); }
 .tts-icon { width: 20px; height: 20px; }
 @keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--orb-1); } 50% { box-shadow: 0 0 20px var(--orb-1); } }
+.summary-btn:hover { background: var(--operator-bg); }
+.summary-btn.loading { background: var(--btn-bg); }
+.summary-btn.loading .summary-icon { animation: spin 1s linear infinite; }
+.summary-icon { width: 20px; height: 20px; }
+.summary-display { margin-top: 15px; padding: 15px; background: var(--calc-bg); border: 1px solid var(--calc-border); border-radius: 8px; }
+.summary-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; }
+.summary-text { font-size: 14px; color: var(--text-primary); line-height: 1.5; }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--orb-1); } 50% { box-shadow: 0 0 20px var(--orb-1); } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .timer { position: absolute; top: 100%; right: 0; margin-top: 8px; font-size: 11px; color: var(--text-secondary); font-family: 'Orbitron', sans-serif; white-space: nowrap; }
 .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none; }
